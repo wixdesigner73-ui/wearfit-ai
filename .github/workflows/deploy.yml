@@ -40,6 +40,12 @@ jobs:
         env:
           # Project sites live at https://<user>.github.io/<repo>/ ; user/org sites (<user>.github.io) live at "/".
           BASE_PATH: ${{ endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name) }}
+          # Optional repository *variables* (Settings > Secrets and variables > Actions > Variables).
+          # They are public build-time settings, not secrets. Leave unset for demo mode / placeholder contact.
+          VITE_TRYON_API_URL: ${{ vars.TRYON_API_URL }}
+          VITE_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          VITE_CURRENCY: ${{ vars.CURRENCY }}
+          VITE_CURRENCY_RATE: ${{ vars.CURRENCY_RATE }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

@@ -1,123 +1,97 @@
 # WearFit AI
 
-A static, premium-feeling fashion storefront built with **React + TypeScript + Vite + Tailwind CSS**, plus a **virtual fitting room running in clearly labeled demo mode**.
+A fashion e-commerce storefront (React + TypeScript + Vite + Tailwind) with a **virtual fitting room** backed by a separate Python FastAPI service that runs the open-source **FASHN VTON v1.5** model.
 
-- No backend, no paid APIs, no secret keys, no paid assets.
-- Product visuals are original SVG illustrations; sample data is fictional and local.
-- Deploys for free to **GitHub Pages**.
+- **Frontend** (this folder): static site, deploys to GitHub Pages.
+- **AI backend** ([`backend/`](backend/README.md)): FastAPI + the real model. GitHub Pages **cannot** host it.
 
-> **Important: the fitting room is NOT AI.** In demo mode it places a flat garment illustration over your photo, and you position it by hand. The UI says so everywhere. No real try-on model is connected or tested. See [Connecting a real model later](#connecting-a-real-model-later).
+> **Being honest about what works.** The website is live on GitHub Pages and fully functional. The AI try-on only works when the backend is running somewhere the browser can reach. A live frontend does **not** mean an AI backend is deployed. Without a backend, the fitting room shows a clearly labeled **"Demo — not AI"** state and uploads nothing.
 
-## Features
+## Status at a glance
 
-- Home, product catalog, product detail pages, wishlist, shopping cart (drawer)
-- Category filters, search, sorting; size and color selectors
-- Cart and wishlist persist in your browser's `localStorage` (never photos)
-- Virtual fitting room: camera capture, photo upload (or drag & drop), preview, selected-garment panel, drag/scale/rotate controls
-- Mobile-first layout with a bottom tab bar; respects safe areas and `prefers-reduced-motion`
-
-## Privacy behavior of the fitting room
-
-- The camera is requested **only after you click "Use camera"** — never on page load.
-- Permission denied, no camera, camera busy, insecure context and unsupported browser each show a friendly message and point to photo upload.
-- Photos exist only in memory (a `Blob` and a temporary object URL). They are **not** written to `localStorage`, `sessionStorage`, IndexedDB or any server, and are released when you remove the photo or leave the page.
-- The camera stream is stopped on capture, on cancel and on leaving the page.
+| Feature | Status |
+| --- | --- |
+| Storefront: 26 products (13 men / 13 women), search, category filters, sizes, colors, stock, wishlist, cart, related products | Working (static) |
+| Real product photography (Pexels, stored locally) | Working |
+| Home, Shop, Men, Women, Product, Wishlist, Cart, About, Contact, Fitting room | Working |
+| Camera capture (only after a click), photo upload, preview + confirm, consent step | Working |
+| FastAPI backend with `POST /api/try-on`, validation, timeouts, queueing | Working: 14 automated tests |
+| **Real FASHN VTON v1.5 inference** | Needs a machine that runs the backend. See [backend/README.md](backend/README.md) for hardware. Verified status is recorded below. |
+| Checkout / payments | **Not implemented** (by design: cart is localStorage only; no orders can be placed) |
+| Contact form | Opens your email app (`mailto:`); there is no server to receive messages |
+| Color variants | Listed as options, but only the pictured color has a photo. The UI says so |
 
 ## Project structure
 
 ```
 src/
-  ai/            TryOnAdapter interface, demo adapter, registry, remote adapter TEMPLATE (unused)
-  components/    Header, Footer, CartDrawer, ProductCard, Selectors, GarmentArt (SVG art), Icons, Toast
-  context/       StoreContext (cart + wishlist)
-  data/          products.ts (local sample catalog)
+  ai/            tryOnClient.ts (talks to the backend), imageUtils.ts (validate + downscale + strip EXIF)
+  components/    Header, Footer, ProductCard, CartDrawer, Selectors, Toast, Icons
+  context/       StoreContext (cart, wishlist, shared product selection)
+  data/          products.ts (the catalog)
   hooks/         useCamera.ts
-  pages/         Home, Shop, ProductDetail, Wishlist, FittingRoom, NotFound
-.github/workflows/deploy.yml   GitHub Pages deployment
-vite.config.ts                 base path logic
+  pages/         Home, Shop (also /men, /women), ProductDetail, Cart, Wishlist, FittingRoom, About, Contact
+  config.ts      env-driven settings (API URL, currency, contact email, asset() base-path helper)
+public/products/          listing photos (4:5 WebP)
+public/products/garment/  garment photos used as AI input (original framing)
+public/CREDITS.md         photo sources
+backend/                  FastAPI service + FASHN integration (own README)
+.github/workflows/deploy.yml
 ```
-
-Routing uses `HashRouter` (URLs look like `.../wearfit-ai/#/shop`), so deep links and page refreshes work on GitHub Pages without server rewrites.
 
 ## Local setup
 
-Requires Node.js 20.19+ or 22.12+ (Vite 8).
+Requires Node.js 20.19+ or 22.12+.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173  (served from "/")
+npm run dev          # http://localhost:5173 (served from "/")
+npm run build        # type-check + production build into dist/
+npm run preview      # serve dist/ with the production base path
 ```
 
-## Build
+To use a real AI backend locally, run it ([backend/README.md](backend/README.md)) and set `VITE_TRYON_API_URL=http://localhost:8000` in `.env.local` (see `.env.example`), or paste the URL into the fitting room's *Advanced → AI server address*.
+
+## Configuration (`.env.local` or GitHub Actions repository *variables*)
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `VITE_TRYON_API_URL` | Backend base URL. Empty = demo mode | empty |
+| `VITE_CURRENCY` / `VITE_CURRENCY_RATE` | Display currency and USD→currency rate | `USD` / `1` |
+| `VITE_CONTACT_EMAIL` | Where the Contact page's `mailto:` goes | placeholder (page warns) |
+
+All of these are public build-time values. **Never put secrets in the frontend.** In GitHub Actions they come from repository variables named `TRYON_API_URL`, `CONTACT_EMAIL`, `CURRENCY`, `CURRENCY_RATE`.
+
+## Fitting-room flow
+
+1. **Photo:** *Take photo* (camera starts only on click; denied/missing/busy camera shows a friendly message) or *Upload*. Images are validated (JPG/PNG/WebP, ≤ 20 MB, ≥ 200 px), re-encoded locally to ≤ 1536 px (this strips GPS/EXIF data) and shown for confirmation.
+2. **Garment:** pick any catalog item. The selection is shared with the shop and product pages (URL `?product=` + session storage).
+3. **Generate:** only available when the backend is connected. A consent checkbox names the server host before anything is sent. A loading state with a timer and Cancel button is shown while the model runs.
+4. **Result:** download, try another garment, change photo, compare up to 3 results side by side, or return to the product page. Results live in memory only.
+
+In demo mode (no backend) nothing is uploaded; once you confirm a photo the stage shows it beside the garment photo, labeled "Side-by-side comparison only. No AI was used."
+
+AI previews are illustrations. They do **not** guarantee size, measurements or physical fit.
+
+## Product photography
+
+Photos come from [Pexels](https://www.pexels.com/license/) (free to use, attribution not required but listed in [`public/CREDITS.md`](public/CREDITS.md)). Each listing image is a 4:5 crop; the original framing is kept as the AI garment input. Where a clean garment-only shot existed (white tee, beige blazer on a hanger) it is tagged `flat-lay`; for everything else the garment image is a model-worn studio photo (`model`), which FASHN accepts as garment input. The ideal catalog would have a clean flat-lay **and** a lifestyle photo per product; free stock sites don't have matched pairs, so each product has one photo. Product names, prices and descriptions are fictional.
+
+## Deployment to GitHub Pages
+
+The Vite `base` is set per build: the workflow passes `BASE_PATH=/<repo-name>/` (or `/` for `<user>.github.io` repos). Local `npm run build` falls back to `DEFAULT_BASE` in `vite.config.ts` (`/wearfit-ai/`). Routing is hash-based, so deep links and refreshes work on static hosting. Product images are resolved through `asset()` so they respect the base path.
+
+One-time repository settings: **Settings → Pages → Source: GitHub Actions**. Pushing to `main` deploys.
+
+Optional: to point the live site at your AI server by default, add a repository *variable* `TRYON_API_URL` (e.g. `https://my-ai-server.example.com`) and re-run the workflow. Remember the server must allow your Pages origin via `ALLOWED_ORIGINS` and be reachable over HTTPS (or be `http://localhost` on the visitor's own machine).
 
 ```bash
-npm run build      # type-checks, then builds into dist/
-npm run preview    # serves dist/ exactly as production would (with the base path)
+git add . && git commit -m "Describe your change" && git push
 ```
 
-### The Vite base path
+## Licenses and limits
 
-GitHub Pages serves a project site at `https://<user>.github.io/<repo>/`, so asset URLs must start with `/<repo>/`. `vite.config.ts` handles this:
-
-| Situation | Base |
-| --- | --- |
-| `npm run dev` | `/` |
-| GitHub Actions deploy | set automatically to `/<repo-name>/` (or `/` for a `<user>.github.io` repo) |
-| Local `npm run build` / `preview` | `DEFAULT_BASE` in `vite.config.ts` (`/wearfit-ai/`) |
-
-If your repository is named something other than `wearfit-ai`, either change `DEFAULT_BASE`, or set `BASE_PATH` for a local build:
-
-```powershell
-# PowerShell
-$env:BASE_PATH = "/my-repo-name/"; npm run build
-```
-```bash
-# macOS / Linux
-BASE_PATH=/my-repo-name/ npm run build
-# Git Bash on Windows rewrites leading "/" paths; prefix with MSYS_NO_PATHCONV=1
-```
-
-The deployed site does not depend on `DEFAULT_BASE`; CI always derives the base from the repository name.
-
-## Publish to GitHub (step by step)
-
-1. **Create an empty repository** on GitHub (github.com → New). Don't add a README or .gitignore. Any name works, e.g. `wearfit-ai`. Keep the default branch name `main`.
-2. **Upload this project** from the project folder:
-   ```bash
-   git init -b main
-   git add .
-   git commit -m "Initial commit: WearFit AI"
-   git remote add origin https://github.com/<your-username>/<your-repo>.git
-   git push -u origin main
-   ```
-   (`node_modules/` and `dist/` are git-ignored; `package-lock.json` should be committed.)
-3. **Enable Pages with GitHub Actions:** repository → **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-4. **Deploy:** the push in step 2 triggers the *Deploy to GitHub Pages* workflow. Watch it under the **Actions** tab. If you enabled Pages after pushing, open Actions → *Deploy to GitHub Pages* → **Run workflow**.
-5. **Open your site** at `https://<your-username>.github.io/<your-repo>/` (the URL is also shown in the deploy job summary).
-
-Every later push to `main` redeploys automatically.
-
-Notes:
-- GitHub Pages on a free account requires a **public** repository (private Pages needs a paid plan).
-- The camera API requires HTTPS; GitHub Pages provides it.
-- Fonts (Inter, Playfair Display) load from Google Fonts. To avoid any third-party request, remove the font `<link>` tags in `index.html`; the CSS falls back to system fonts.
-
-## Connecting a real model later
-
-All fitting-room logic talks to the `TryOnAdapter` interface in [`src/ai/types.ts`](src/ai/types.ts). Today only `demoAdapter` exists, and its results are `isAiGenerated: false`.
-
-To integrate a genuine try-on model:
-
-1. Copy [`src/ai/remoteAdapter.example.ts`](src/ai/remoteAdapter.example.ts) to `remoteAdapter.ts` and implement it against a model/service you are licensed to use.
-2. Register it in [`src/ai/index.ts`](src/ai/index.ts).
-3. Extend the `FittingRoom` page to render `result.imageBlob` (it currently renders only the demo overlay), add an explicit consent step, since photos would leave the device.
-4. **Never put secret API keys in this frontend.** Anything in a static site is public; route requests through your own server or proxy.
-5. Test output quality properly. Only then should the UI call the result AI-generated.
-
-## Scripts
-
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Dev server with hot reload |
-| `npm run build` | Type-check and production build to `dist/` |
-| `npm run preview` | Serve the production build locally |
+- Code: your project. Dependencies are open-source.
+- Photos: Pexels license (see credits).
+- FASHN VTON v1.5 code and weights: Apache-2.0. **However**, its human-parser dependency inherits NVIDIA's SegFormer license (*research or evaluation purposes only*). Treat the AI feature as a demo/evaluation and obtain legal advice before commercial use. Details in [backend/README.md](backend/README.md#licensing-read-before-any-commercial-use).
+- No paid APIs, subscriptions or services are used. Free GPU hosting has quotas and terms that change; none is promised.

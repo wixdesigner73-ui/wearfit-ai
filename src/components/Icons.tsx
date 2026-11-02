@@ -111,3 +111,32 @@ export const FilterIcon = (p: IconProps) => (
     <path d="M4 6h16M7 12h10M10 18h4" />
   </Base>
 )
+export const MenuIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Base>
+)
+export const DownloadIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 4v12" />
+    <path d="M7 11l5 5 5-5" />
+    <path d="M4 20h16" />
+  </Base>
+)
+export const ArrowLeftIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </Base>
+)
+export const ShieldIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+    <path d="M9 12l2 2 4-4" />
+  </Base>
+)
+export const CompareIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="4" width="8" height="16" rx="1.5" />
+    <rect x="13" y="4" width="8" height="16" rx="1.5" />
+  </Base>
+)

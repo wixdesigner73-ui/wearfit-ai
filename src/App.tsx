@@ -5,6 +5,9 @@ import Footer from './components/Footer'
 import Header from './components/Header'
 import Toast from './components/Toast'
 import { StoreProvider } from './context/StoreContext'
+import About from './pages/About'
+import Cart from './pages/Cart'
+import Contact from './pages/Contact'
 import FittingRoom from './pages/FittingRoom'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
@@ -31,9 +34,14 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/men" element={<Shop key="men" gender="men" />} />
+            <Route path="/women" element={<Shop key="women" gender="women" />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/cart" element={<Cart />} />
             <Route path="/fitting-room" element={<FittingRoom />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

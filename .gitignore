@@ -3,3 +3,15 @@ dist
 *.local
 *.tsbuildinfo
 .DS_Store
+
+# AI backend: local environment, downloaded model weights and the cloned FASHN repo (re-created by backend/README.md steps)
+backend/.venv/
+backend/weights/
+backend/vendor/
+backend/.env
+backend/smoke_output.png
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+.env.local

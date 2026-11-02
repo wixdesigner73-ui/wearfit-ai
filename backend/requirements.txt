@@ -1,0 +1,7 @@
+# API server (this file). The AI model dependencies are installed separately, see backend/README.md:
+#   1. PyTorch  (CPU or CUDA build, chosen for your machine)
+#   2. fashn-vton (from the official FASHN repository)
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pillow>=10.3

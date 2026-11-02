@@ -4,6 +4,7 @@ import type { CartItem } from '../types'
 
 const CART_KEY = 'wearfit.cart.v1'
 const WISHLIST_KEY = 'wearfit.wishlist.v1'
+const SELECTED_KEY = 'wearfit.selectedProduct.v1' // sessionStorage: last product chosen for the fitting room
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -23,6 +24,9 @@ function save(key: string, value: unknown) {
 }
 
 interface StoreState {
+  /** Product currently selected for the fitting room; shared by the shop, product page and fitting room. */
+  selectedProductId: string | null
+  selectProduct: (productId: string) => void
   cart: CartItem[]
   wishlist: string[]
   cartCount: number
@@ -53,6 +57,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>(() =>
     load<string[]>(WISHLIST_KEY, []).filter((id) => getProduct(id)),
   )
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
+    try {
+      const id = sessionStorage.getItem(SELECTED_KEY)
+      return id && getProduct(id) ? id : null
+    } catch {
+      return null
+    }
+  })
   const [cartOpen, setCartOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -68,6 +80,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const t = window.setTimeout(() => setToast(null), 2600)
     return () => window.clearTimeout(t)
   }, [toast])
+
+  const selectProduct = useCallback((productId: string) => {
+    setSelectedProductId(productId)
+    try {
+      sessionStorage.setItem(SELECTED_KEY, productId)
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const notify = useCallback((message: string) => setToast(message), [])
 
@@ -99,6 +120,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const cartCount = cart.reduce((n, i) => n + i.qty, 0)
     const cartTotal = cart.reduce((sum, i) => sum + (getProduct(i.productId)?.price ?? 0) * i.qty, 0)
     return {
+      selectedProductId,
+      selectProduct,
       cart,
       wishlist,
       cartCount,
@@ -115,7 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isWishlisted: (id) => wishlist.includes(id),
       notify,
     }
-  }, [cart, wishlist, cartOpen, toast, addToCart, setQty, removeFromCart, clearCart, toggleWishlist, notify])
+  }, [selectedProductId, selectProduct, cart, wishlist, cartOpen, toast, addToCart, setQty, removeFromCart, clearCart, toggleWishlist, notify])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }
