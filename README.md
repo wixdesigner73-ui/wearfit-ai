@@ -16,7 +16,7 @@ A fashion e-commerce storefront (React + TypeScript + Vite + Tailwind) with a **
 | Home, Shop, Men, Women, Product, Wishlist, Cart, About, Contact, Fitting room | Working |
 | Camera capture (only after a click), photo upload, preview + confirm, consent step | Working |
 | FastAPI backend with `POST /api/try-on`, validation, timeouts, queueing | Working: 14 automated tests |
-| **Real FASHN VTON v1.5 inference** | Needs a machine that runs the backend. See [backend/README.md](backend/README.md) for hardware. Verified status is recorded below. |
+| **Real FASHN VTON v1.5 inference** | Needs a machine that runs the backend. See [backend/README.md](backend/README.md) for hardware. **Not yet verified end-to-end:** on the CPU-only development PC an 8-step run had not finished after 30 minutes. Needs an NVIDIA GPU (see backend README). |
 | Checkout / payments | **Not implemented** (by design: cart is localStorage only; no orders can be placed) |
 | Contact form | Opens your email app (`mailto:`); there is no server to receive messages |
 | Color variants | Listed as options, but only the pictured color has a photo. The UI says so |

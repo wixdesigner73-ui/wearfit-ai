@@ -118,4 +118,4 @@ There is no free, always-on GPU host that I can recommend without caveats. The h
 
 ## Measured on CPU
 
-See the root README for the timings measured on the development machine.
+On the development machine (Intel i5-10210U, 4 cores, 15.8 GB RAM, no NVIDIA GPU) the model **loads and runs** (≈5.5–6 GB RAM, all cores busy), but a single `--steps 8` smoke test had **not finished after 30 minutes**. Extrapolating, a default 30-step image would take hours. **CPU-only is therefore not practical for this model**; use an NVIDIA GPU with ≥ 8 GB VRAM. A completed end-to-end inference has **not** been verified on this machine.
