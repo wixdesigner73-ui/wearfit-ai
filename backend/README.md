@@ -125,4 +125,21 @@ There is no free, always-on GPU host that I can recommend without caveats. The h
 
 ## Measured on CPU
 
-On the development machine (Intel i5-10210U, 4 cores, 15.8 GB RAM, no NVIDIA GPU) the model **loads and runs** (≈5.5–6 GB RAM, all cores busy), but a single `--steps 8` smoke test had **not finished after 30 minutes**. Extrapolating, a default 30-step image would take hours. **CPU-only is therefore not practical for this model**; use an NVIDIA GPU with ≥ 8 GB VRAM. A completed end-to-end inference has **not** been verified on this machine.
+On the development machine (Intel i5-10210U, 4 cores, 15.8 GB RAM, no NVIDIA GPU, float32):
+
+- The real model **loads and produces valid output**. A run on FASHN's own example images (8 steps) generated a new 576x864 photo of the same person wearing the new garment (identity, pose and background preserved; garment replaced).
+- Speed: **about 333 seconds per diffusion step** (measured from the sampler's progress bar), so **8 steps take about 44 minutes** and the default 30 steps would take roughly **2.8 hours** per image.
+- **CPU-only is therefore a way to verify the pipeline, not a way to run the store.** Use an NVIDIA GPU with at least 8 GB VRAM (FASHN reports about 5 seconds per image on an H100).
+
+## Measured on a free Kaggle GPU (Tesla T4)
+
+`notebooks/kaggle/run_tryon.py` ran the real pipeline on a Kaggle T4 (14.6 GiB, bfloat16, 30 steps) with FASHN's example person photo and four real catalog garments fetched from the live site:
+
+| Garment (category / photo type) | Result | Time |
+| --- | --- | --- |
+| Classic Heavyweight Tee (tops / flat-lay) | New 576x864 photo, same person, white short-sleeve top. **Flaw:** it came out with a collar (polo-like) although the garment photo is a round-neck tee. | 428 s |
+| Signal Red Bomber (tops / model) | Red bomber with grey trim and zip, correct | 436 s |
+| Straight-Fit Jeans (bottoms / model) | Blue jeans replaced the beige trousers, correct | 435 s |
+| Lemon Collared Mini Dress (one-pieces / model) | Yellow dress with white collar; the visible beige trousers remain from the original photo | 435 s |
+
+Face, pose, hat, boots and background were preserved in all four, and the four outputs differ from each other, so they are generated images, not overlays or composites. A T4 takes about 7 minutes per image; FASHN reports about 5 s on an H100. This was a one-person, one-photo test; garment fidelity is not guaranteed (see the tee). The website-to-API path was **not** exercised against a GPU server in this test.

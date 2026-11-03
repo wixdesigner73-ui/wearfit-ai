@@ -36,7 +36,8 @@ class Settings:
     max_image_pixels: int = field(default_factory=lambda: _int("MAX_IMAGE_PIXELS", 40_000_000))
     # Diffusion steps: 20 = fast, 30 = balanced (model default), 50 = best. CPU users may want 15-20.
     default_timesteps: int = field(default_factory=lambda: _int("DEFAULT_TIMESTEPS", 30))
-    min_timesteps: int = 10
+    # Lower bound for requested steps. 10 is sensible on GPU; CPU test runs may set MIN_TIMESTEPS=8 (quality drops).
+    min_timesteps: int = field(default_factory=lambda: _int("MIN_TIMESTEPS", 10))
     max_timesteps: int = 50
     # Seconds before the API answers 504. CPU inference is slow, so the default is generous.
     timeout_seconds: int = field(default_factory=lambda: _int("TRYON_TIMEOUT_SECONDS", 1800))

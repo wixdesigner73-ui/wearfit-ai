@@ -101,7 +101,7 @@ export interface TryOnParams {
   /** Optional sampling steps (backend clamps to its allowed range). */
   numTimesteps?: number
   signal?: AbortSignal
-  /** Hard client-side timeout. CPU inference can be very slow, so this is generous. */
+  /** Hard client-side timeout (default 90 min). GPU takes seconds; a CPU-only server can take tens of minutes. */
   timeoutMs?: number
 }
 
@@ -121,7 +121,7 @@ export async function generateTryOn(p: TryOnParams): Promise<Blob> {
   const timer = window.setTimeout(() => {
     timedOut = true
     controller.abort()
-  }, p.timeoutMs ?? 20 * 60 * 1000)
+  }, p.timeoutMs ?? 90 * 60 * 1000)
   const onAbort = () => controller.abort()
   p.signal?.addEventListener('abort', onAbort)
 
