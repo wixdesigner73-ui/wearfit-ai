@@ -156,3 +156,12 @@ def test_busy_server_returns_429():
     app.state.active = 1  # one request already running, none allowed to wait
     r = TestClient(app).post("/api/try-on", files=files(jpeg(), jpeg()), data={"category": "tops"})
     assert r.status_code == 429 and r.json()["detail"]["code"] == "busy"
+
+
+def test_json_response_format_has_status_and_image(client):
+    r = client.post("/api/try-on", files=files(jpeg(), jpeg()), data={"category": "tops", "response_format": "json"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["processing_status"] == "completed"
+    assert body["generated_image"].startswith("data:image/png;base64,")
+    assert body["category"] == "tops" and body["model"] == "FASHN VTON v1.5"

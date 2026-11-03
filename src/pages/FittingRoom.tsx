@@ -98,6 +98,7 @@ export default function FittingRoom() {
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [comparing, setComparing] = useState(false)
+  const [showBefore, setShowBefore] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const resultsRef = useRef<TryOnResultItem[]>([])
   resultsRef.current = results
@@ -152,6 +153,7 @@ export default function FittingRoom() {
     setRunning(true)
     setRunError(null)
     setComparing(false)
+    setShowBefore(false)
     try {
       const garmentRes = await fetch(asset(product.garmentImage))
       if (!garmentRes.ok) throw new TryOnError('The garment image could not be loaded.', 'server')
@@ -233,12 +235,14 @@ export default function FittingRoom() {
               <img src={current.url} alt={`AI try-on preview of ${current.product.name}`} className="absolute inset-0 h-full w-full object-contain bg-ink" />
             )}
 
-            {!cameraLive && !current && photoUrl && !aiReady && photoConfirmed ? (
-              <DemoSideBySide photoUrl={photoUrl} product={product} />
-            ) : (
-              !cameraLive &&
-              !current &&
-              photoUrl && <img src={photoUrl} alt="Your photo" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+            {/* The user's own photo. Never a side-by-side, overlay or composite: the only generated image is `current`. */}
+            {!cameraLive && !current && photoUrl && (
+              <img src={photoUrl} alt="Your photo" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+            )}
+            {!cameraLive && !current && photoUrl && !aiReady && !running && (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-4 pt-12 text-center text-xs text-white">
+                No AI server is connected, so no try-on can be generated. This is only your own photo.
+              </div>
             )}
 
             {!cameraLive && !current && !photoUrl && <EmptyStage requesting={camera.status === 'requesting'} />}
@@ -265,7 +269,7 @@ export default function FittingRoom() {
                 current ? 'bg-emerald-700/90' : !aiReady ? 'bg-rose-700/90' : 'glass-dark'
               }`}
             >
-              {current ? 'AI-generated · FASHN VTON v1.5' : !aiReady ? 'Demo — not AI' : 'Ready for AI try-on'}
+              {current ? 'AI-generated · FASHN VTON v1.5' : !aiReady ? 'AI not connected · no try-on' : 'Ready for AI try-on'}
             </span>
           </div>
 
@@ -292,32 +296,55 @@ export default function FittingRoom() {
                 garment will physically fit.
               </p>
               <div className="grid grid-cols-2 gap-2.5">
-                <a
-                  href={current.url}
-                  download={`wearfit-tryon-${current.product.id}.png`}
+                <button
+                  onClick={() => pickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
                   className="flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white"
                 >
-                  <DownloadIcon width={16} height={16} /> Download
-                </a>
-                <Link to={`/product/${current.product.id}`} className="flex items-center justify-center gap-2 rounded-full border border-ink px-4 py-3 text-xs font-semibold uppercase tracking-wider">
-                  <ArrowLeftIcon width={16} height={16} /> Product page
-                </Link>
-                <button
-                  onClick={() => pickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="flex items-center justify-center gap-2 rounded-full border border-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-                >
-                  <SparkleIcon width={16} height={16} /> Try another
+                  <SparkleIcon width={16} height={16} /> Try Another Outfit
                 </button>
                 <button
                   onClick={() => {
                     setCurrentId(null)
+                    setShowBefore(false)
                     setPhoto(null)
                   }}
+                  className="flex items-center justify-center gap-2 rounded-full border border-ink px-4 py-3 text-xs font-semibold uppercase tracking-wider"
+                >
+                  <CameraIcon width={16} height={16} /> Change My Photo
+                </button>
+                <a
+                  href={current.url}
+                  download={`wearfit-tryon-${current.product.id}.png`}
                   className="flex items-center justify-center gap-2 rounded-full border border-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                 >
-                  <CameraIcon width={16} height={16} /> Change photo
-                </button>
+                  <DownloadIcon width={16} height={16} /> Download Result
+                </a>
+                <Link to="/shop" className="flex items-center justify-center gap-2 rounded-full border border-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-wider">
+                  <ArrowLeftIcon width={16} height={16} /> Back to Products
+                </Link>
               </div>
+              {/* Optional, off by default: the generated photo above stays the main result. */}
+              {photoUrl && (
+                <button
+                  onClick={() => setShowBefore((v) => !v)}
+                  aria-expanded={showBefore}
+                  className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium text-ink/70 underline-offset-4 hover:underline"
+                >
+                  <CompareIcon width={15} height={15} /> {showBefore ? "Hide before / after" : "Show before / after"}
+                </button>
+              )}
+              {showBefore && photoUrl && (
+                <div className="grid grid-cols-2 gap-2">
+                  <figure>
+                    <img src={photoUrl} alt="Your original photo" className="aspect-[3/4] w-full rounded-xl object-cover" />
+                    <figcaption className="mt-1 text-center text-[11px] text-ink/55">Before (your photo)</figcaption>
+                  </figure>
+                  <figure>
+                    <img src={current.url} alt="AI-generated try-on" className="aspect-[3/4] w-full rounded-xl bg-ink object-contain" />
+                    <figcaption className="mt-1 text-center text-[11px] text-ink/55">After (AI-generated)</figcaption>
+                  </figure>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -456,7 +483,7 @@ export default function FittingRoom() {
 
             {!aiReady ? (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm leading-relaxed text-rose-900">
-                <p className="font-semibold">AI try-on is not available right now. The page is in DEMO mode (not AI).</p>
+                <p className="font-semibold">The AI server is not connected, so no try-on can be generated.</p>
                 <p className="mt-2">
                   {backend.kind === 'unconfigured' && 'No AI server is configured. The try-on model runs on a separate server (see the README), which has to be connected first.'}
                   {backend.kind === 'checking' && 'Checking the AI server…'}
@@ -464,9 +491,12 @@ export default function FittingRoom() {
                   {backend.kind === 'model-unavailable' && backend.reason}
                 </p>
                 <p className="mt-2">
-                  In demo mode your photo is not uploaded anywhere. Once you confirm a photo, the stage shows it side by side with the
-                  garment so you can compare them yourself. That is not a try-on.
+                  Nothing is uploaded and nothing is faked: this page never shows an overlay or a composite as a try-on. Connect an AI
+                  server (see the README) to generate a real photo of you in this garment.
                 </p>
+                <button disabled className="mt-4 inline-flex cursor-not-allowed items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-white opacity-40">
+                  <SparkleIcon width={18} height={18} /> Generate AI try-on
+                </button>
               </div>
             ) : (
               <div className="mt-4 space-y-4">
@@ -643,19 +673,6 @@ function EmptyStage({ requesting }: { requesting: boolean }) {
         </svg>
         <p className="mt-4 text-sm font-medium text-ink/70">{requesting ? 'Waiting for camera permission…' : 'Your photo appears here'}</p>
         <p className="mt-1 text-xs text-ink/50">Take a photo or upload one to begin.</p>
-      </div>
-    </div>
-  )
-}
-
-/** Demo mode only: shows the user's photo next to the garment photo. This is NOT a try-on and uploads nothing. */
-function DemoSideBySide({ photoUrl, product }: { photoUrl: string; product: Product }) {
-  return (
-    <div className="absolute inset-0 grid grid-cols-2 bg-ink">
-      <img src={photoUrl} alt="Your photo" className="h-full w-full object-cover" draggable={false} />
-      <img src={asset(product.image)} alt={product.name} className="h-full w-full object-cover" draggable={false} />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-4 pt-10 text-center text-xs text-white">
-        Side-by-side comparison only. No AI was used and no try-on was generated.
       </div>
     </div>
   )

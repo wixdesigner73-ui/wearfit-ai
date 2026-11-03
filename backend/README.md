@@ -52,6 +52,8 @@ python scripts/smoke_test.py --steps 8      # FASHN's own example images; prints
 
 ### Start the API
 
+On Windows the quickest way is `.start.ps1` (checks the venv and weights, prints whether CUDA is available, sets CORS for the GitHub Pages origin). Manual equivalent:
+
 ```powershell
 copy .env.example .env                      # then edit ALLOWED_ORIGINS (see CORS below)
 $env:ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://YOUR-USERNAME.github.io"
@@ -79,6 +81,7 @@ pytest tests -q
 | `garment_photo_type` | no | `model` (worn by a person, default) or `flat-lay` (garment alone) |
 | `num_timesteps` | no | Diffusion steps, clamped to 10–50 (default `DEFAULT_TIMESTEPS`=30) |
 | `seed` | no | Default 42 |
+| `response_format` | no | `image` (default: raw PNG) or `json`: `{processing_status: "completed", generated_image: "data:image/png;base64,…", model, device, category, num_timesteps, inference_seconds}` |
 
 Success: `200 image/png` (576×864) with `Cache-Control: no-store`. Errors are JSON `{"detail": {"code", "message"}}`:
 `400 too_small/empty_file` · `413 too_large/too_many_pixels` · `415 unsupported_image` · `422` bad field · `429 busy` · `503 model_unavailable` · `504 timeout` · `500 inference_failed`.
@@ -98,6 +101,10 @@ Browsers enforce two rules you must plan for:
 2. **Mixed content:** the GitHub Pages site is HTTPS, so browsers block calls to a plain `http://` server, with one exception: `http://localhost` / `127.0.0.1` is allowed. So the simplest working setup is to run this API on your own GPU PC and, in the fitting room's *Advanced → AI server address*, enter `http://localhost:8000`. Chrome may show a "local network access" prompt; the API answers the required `Access-Control-Allow-Private-Network` preflight header. For other machines you need an HTTPS URL (a reverse proxy such as Caddy, or a tunnel you are allowed to run).
 
 Setting the **repository variable** `TRYON_API_URL` (Settings → Secrets and variables → Actions → Variables) makes the deployed site use that URL by default. It is a public value, not a secret. Never put API keys in the frontend.
+
+## Test the real model on a free GPU (notebook)
+
+[`notebooks/wearfit_tryon_test.ipynb`](../notebooks/wearfit_tryon_test.ipynb) runs the real pipeline on **your photo** and real catalog garments (fetched from the live site) and shows photo | garment | AI result. Open it in Colab (GPU runtime) or Kaggle (GPU accelerator, Internet on). It is a **testing tool, not a backend**: it does not serve the website, sessions are temporary, and quotas change. It has been syntax-validated but was not executed in Colab/Kaggle by the author.
 
 ## Where can this run for free?
 

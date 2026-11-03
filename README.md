@@ -16,7 +16,7 @@ A fashion e-commerce storefront (React + TypeScript + Vite + Tailwind) with a **
 | Home, Shop, Men, Women, Product, Wishlist, Cart, About, Contact, Fitting room | Working |
 | Camera capture (only after a click), photo upload, preview + confirm, consent step | Working |
 | FastAPI backend with `POST /api/try-on`, validation, timeouts, queueing | Working: 14 automated tests |
-| **Real FASHN VTON v1.5 inference** | Needs a machine that runs the backend. See [backend/README.md](backend/README.md) for hardware. **Not yet verified end-to-end:** on the CPU-only development PC an 8-step run had not finished after 30 minutes. Needs an NVIDIA GPU (see backend README). |
+| **Real FASHN VTON v1.5 inference** | Needs a machine that runs the backend. See [backend/README.md](backend/README.md) for hardware. **Not yet verified end-to-end on this PC:** on the CPU-only development PC an 8-step run had not finished after 30 minutes. Needs an NVIDIA GPU (see backend README). |
 | Checkout / payments | **Not implemented** (by design: cart is localStorage only; no orders can be placed) |
 | Contact form | Opens your email app (`mailto:`); there is no server to receive messages |
 | Color variants | Listed as options, but only the pictured color has a photo. The UI says so |
@@ -69,7 +69,7 @@ All of these are public build-time values. **Never put secrets in the frontend.*
 3. **Generate:** only available when the backend is connected. A consent checkbox names the server host before anything is sent. A loading state with a timer and Cancel button is shown while the model runs.
 4. **Result:** download, try another garment, change photo, compare up to 3 results side by side, or return to the product page. Results live in memory only.
 
-In demo mode (no backend) nothing is uploaded; once you confirm a photo the stage shows it beside the garment photo, labeled "Side-by-side comparison only. No AI was used."
+When no AI server is connected the page generates nothing: it shows only your own photo, labeled "AI not connected · no try-on", with a disabled Generate button. It never shows an overlay, composite or side-by-side as a try-on. After a real result exists, an optional "Show before / after" button reveals the comparison; the generated photo is always the main result.
 
 AI previews are illustrations. They do **not** guarantee size, measurements or physical fit.
 

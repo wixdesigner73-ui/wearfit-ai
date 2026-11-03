@@ -10,12 +10,13 @@ it never returns a placeholder or fabricated image. Photos are processed in memo
 from __future__ import annotations
 
 import asyncio
+import base64
 import io
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,6 +93,7 @@ def create_app(settings: Optional[Settings] = None, model: Optional[ModelManager
         garment_photo_type: PhotoType = Form("model", description="model = garment worn by a person; flat-lay = garment only"),
         num_timesteps: Optional[int] = Form(None, description="Diffusion steps (clamped to the server's allowed range)"),
         seed: int = Form(42),
+        response_format: Literal["image", "json"] = Form("image", description="image = raw PNG (default); json = {processing_status, generated_image (data URL), ...}"),
     ):
         if not manager.loaded:
             raise fail(
@@ -134,15 +136,22 @@ def create_app(settings: Optional[Settings] = None, model: Optional[ModelManager
             png = io.BytesIO()
             output.save(png, format="PNG")
             log.info("try-on finished: category=%s steps=%d device=%s %.1fs", category, steps, manager.device, elapsed)
-            return Response(
-                content=png.getvalue(),
-                media_type="image/png",
-                headers={
-                    "Cache-Control": "no-store",
-                    "X-Inference-Seconds": f"{elapsed:.1f}",
-                    "X-Model": MODEL_NAME,
-                },
-            )
+            headers = {"Cache-Control": "no-store", "X-Inference-Seconds": f"{elapsed:.1f}", "X-Model": MODEL_NAME}
+            if response_format == "json":
+                data_url = "data:image/png;base64," + base64.b64encode(png.getvalue()).decode("ascii")
+                return JSONResponse(
+                    content={
+                        "processing_status": "completed",
+                        "generated_image": data_url,
+                        "model": MODEL_NAME,
+                        "device": manager.device,
+                        "category": category,
+                        "num_timesteps": steps,
+                        "inference_seconds": round(elapsed, 1),
+                    },
+                    headers=headers,
+                )
+            return Response(content=png.getvalue(), media_type="image/png", headers=headers)
         finally:
             app.state.active -= 1
             # Close uploads so any spooled temporary files are deleted immediately.
